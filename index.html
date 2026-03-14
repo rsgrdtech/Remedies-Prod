@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Patient CRM - Homeopathic Practice</title>
+<title>Freemont Gurdwara RM - Homeopathic Practice</title>
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
@@ -196,7 +196,6 @@ background-color: #f9f9f9;
 font-weight: bold;
 font-size: 1.1em;
 margin-bottom: 8px;
-height: 1.2em;
 overflow: hidden;
 white-space: nowrap;
 text-overflow: ellipsis;
@@ -1567,7 +1566,7 @@ function searchRemedies() {
 
     const terms = searchTerm.split(',').map(t => t.trim()).filter(t => t);
     let results = [];
-
+/*
     terms.forEach(term => {
         if (!term) return;
 
@@ -1610,7 +1609,66 @@ function searchRemedies() {
 
         results = [...results, ...termResults];
     });
+*/
+terms.forEach(term => {
+    if (!term) return;
 
+    let termResults = [];
+    const termLower = term.toLowerCase();
+
+    // Case 1 — Pure potency search (e.g. "30")
+    if (/^\d+[a-zA-Z]*$/i.test(term)) {
+
+        addDebugLog(`Searching potency only: ${term}`);
+
+        termResults = remediesData.filter(remedy => {
+            const potency = (remedy['Potency'] || '').toLowerCase();
+            return potency.includes(termLower);
+        });
+
+    }
+    
+    // Case 2 — Name + potency like "acon30" or "acon 30"
+    else if (/^[a-zA-Z]+\s*\d+/i.test(term)) {
+
+        const match = term.match(/^([a-zA-Z]+)\s*(\d+)/i);
+
+        if (match) {
+            const namePart = match[1].toLowerCase();
+            const potencyPart = match[2];
+
+            addDebugLog(`Searching name+potency: ${namePart} ${potencyPart}`);
+
+            termResults = remediesData.filter(remedy => {
+                const name = (remedy['Remedy Name'] || '').toLowerCase();
+                const potency = (remedy['Potency'] || '').toLowerCase();
+
+                return name.startsWith(namePart) && potency.includes(potencyPart);
+            });
+        }
+    }
+    
+    // Case 3 — Normal name search
+    else {
+
+        addDebugLog(`Prefix searching name: ${term}`);
+
+        termResults = remediesData.filter(remedy => {
+
+            const name = (remedy['Remedy Name'] || '').toLowerCase();
+            const potency = (remedy['Potency'] || '').toLowerCase();
+            const remedyNumber = (remedy['Remedy Number'] || '').toString();
+            const boxNumber = (remedy['BOX Number'] || '').toString();
+
+            return name.startsWith(termLower) ||
+                   potency.includes(termLower) ||
+                   remedyNumber.startsWith(termLower) ||
+                   boxNumber.startsWith(termLower);
+        });
+    }
+
+    results = [...results, ...termResults];
+});
     // Remove duplicates
     results = results.filter((remedy, index, self) =>
         index === self.findIndex(r =>
@@ -1655,7 +1713,7 @@ function searchRemedies() {
     }
 
     remediesPaneTitle.textContent = 'Remedies Search Results';
-    remediesPaneSubtitle.textContent = `Found ${results.length} remedies starting with "${searchTerm}"`;
+    remediesPaneSubtitle.textContent = `Found ${results.length} Unique remedies starting with "${searchTerm}"`;
     addDebugLog(`Found ${results.length} unique remedies starting with search terms`);
 
     if (results.length > 0) {
